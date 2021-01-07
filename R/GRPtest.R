@@ -42,7 +42,6 @@
 #' Meinshausen, N., Meier, L. and Bühlmann, P. (2012)
 #' \emph{p-Values for High-Dimensional Regression}
 #' Journal of the American Statistical Association, 104:488, 1671-1681
-#' @seealso
 #' @examples
 #' # Testing for nonlinearity: Logistic link function
 #'
@@ -74,11 +73,11 @@
 #' @import randomForest
 #' @import glmnet
 #' @import RPtests
-#'
+#' @importFrom ranger ranger
 #'
 GRPtest <- function(X, y, fam = c("gaussian", "binomial", "poisson"),
                       RP_function = NULL,
-                      nsplits = 5L, penalize = ifelse(p >= floor(n/2), TRUE, FALSE), output_all = FALSE){
+                      nsplits = 5L, penalize = ifelse(p >= floor(n/1000), TRUE, FALSE), output_all = FALSE){
 
   if (!is.matrix(X)){
     stop("X should be a matrix with at least one column.")

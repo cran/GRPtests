@@ -6,7 +6,7 @@
 \usage{
 GRPtest(X, y, fam = c("gaussian", "binomial", "poisson"),
   RP_function = NULL, nsplits = 5L, penalize = ifelse(p >=
-  floor(n/2), TRUE, FALSE), output_all = FALSE)
+  floor(n/1000), TRUE, FALSE), output_all = FALSE)
 }
 \arguments{
 \item{X}{Input matrix with \code{n} rows, each a \code{p}-dimensional observation vector.}

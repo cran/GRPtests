@@ -10,7 +10,11 @@ nonlin_test <- function(X, y, fam, nsplits, RP_function, penalize){
     pvals[i] <- single_split_pval(X, y, fam, RP_function, penalize)
   }
 
-  pval <- min(2*median(pvals), 1)
+  if(nsplits > 1){
+    pval <- min(2*median(pvals), 1)
+  }else{
+    pval <- pvals[1]
+  }
   return(list(pval = pval, pvals = pvals))
 
 }
@@ -34,7 +38,7 @@ single_split_pval <- function(X, y, fam, RP_function, penalize){
 
   # Compute residuals resA, resB
   resA <- partA$res/partA$D
-  resB <- partB$res/partB$D
+  resB <- partB$res/partA$D  
 
   beta.hat <- partA$beta
   hatS <- which(beta.hat[-1] != 0)
@@ -70,7 +74,7 @@ orthogonalize <- function(D, XB, pred.rf, hatS){
 ## Exact orthognalization is done on variables contained in hatS.
 
   ## Fit sqrt-LASSO to estimate w
-  Dw <- sqrt(D)
+  Dw <- D
   p <- ncol(XB)
   n <- nrow(XB)
 
@@ -80,13 +84,13 @@ orthogonalize <- function(D, XB, pred.rf, hatS){
   if(sum(indi) == 0) indi[1] <- 1 # if all penalty factors are zero, put penalty on the first entry to avoid error
 
   # Orthogonalize
-  fit <- glmnet(Dw*XB, pred.rf, penalty.factor = indi, nlambda = 40)
-  W <- pred.rf - Dw*XB%*%fit$beta
+  fit <- glmnet(Dw*XB, Dw*pred.rf, penalty.factor = indi, nlambda = 40)
+  W <- Dw*(pred.rf - XB%*%fit$beta)
   lambda.sqrt.lasso <- sqrt(2*log(p)/n)
   index <- which.min(abs(fit$lambda - lambda.sqrt.lasso*apply(W, 2, function(x) sqrt(sum(x^2))/sqrt(n) )))
   beta.sqrt <- fit$beta[,index]
 
-  w <- pred.rf - Dw*XB%*%beta.sqrt
+  w <- Dw*(pred.rf - XB%*%beta.sqrt)
   w
 }
 
@@ -123,8 +127,14 @@ glmfit <- function(XA, yA, fam, penalize){
 
 RP_randomForest <- function(XA, resA, XB){
 ## Fits a random forest of resA on XA and predicts it on XB
-  rf <- randomForest(XA, as.vector(resA))
-  pred.rf <- predict(rf, newdata = XB)
+  
+  vars <- 1:ncol(XA)
+  num.vars <- length(vars)
+  data.res <- data.frame(rbind(XA[, vars], XB[, vars]), c(resA, resA))
+  rf <- ranger(y = data.res[1:nrow(XA),num.vars + 1], 
+               x = data.res[1:nrow(XA),1:num.vars], data = data.res[1:nrow(XA),])
+  pred.rf <- predict(rf, data = data.res[(nrow(XA)+1):(nrow(XA)+nrow(XB)),])$predictions
+  
   pred.rf
 }
 
