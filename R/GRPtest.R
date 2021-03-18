@@ -4,8 +4,9 @@
 #' generalized linear model (GLM) by detecting the presence of nonlinearity in
 #' the conditional mean function of y given X. Outputs a p-value.
 #'
-#' @param X Input matrix with \code{n} rows, each a \code{p}-dimensional observation vector.
-#' @param y Response vector.
+#' @param X A matrix or a data frame with \code{n} rows. In case of
+#' a data frame, each column may be a numerical vector or a factor.
+#' @param y Response vector with \code{n} entries. (If \code{fam=="binomial"}, \code{y} may be a numerical vector of 0s and 1s or a factor with two levels).
 #' @param fam Must be "gaussian", "binomial" or "poisson".
 #' @param RP_function (optional) User specified function for residual prediction (see Details below).
 #' @param penalize \code{TRUE} if penalization should be used when fitting the GLM models (see Details below).
@@ -68,6 +69,33 @@
 #' y <- rpois(n = nrow(X), lambda = mu)
 #' (out <- GRPtest(X, y, fam = "poisson", RP_function = my_RP_function))
 #'
+#'\dontrun{
+#' # An example with factors (labelled as "Not run" due to running time > 10s)
+#' 
+#' set.seed(1)
+#' n <- 2021
+#' X1 <- sample(c("A","B","C"), n, replace = TRUE)
+#' X1 <- factor(X1, levels = c("A", "B", "C"))
+#' X2 <- sample(c("Male","Female"), n, replace = TRUE)
+#' X2 <- factor(X2, levels = c("Male", "Female"))
+#' X3 <- rnorm(n)
+#' X <- data.frame(X1, X2, X3)
+#' 
+#' # Generate response y1 using a logistic regression model
+#' prob1 <- 1 / (1 + exp( - (X1 == "B") + 2*(X1 == "C") - 2*(X2 == "Male") - X3) ) 
+#' y1 <- rbinom(n, 1, prob1)
+#' 
+#' # Output p-value for goodness of fit of the logistic regression model 
+#' (out <- GRPtest(X, y1, fam = "binomial", nsplits = 10))
+#' 
+#' # Generate response y2 using a logistic regression model but with an interaction between X1 and X2
+#' prob2 <- 1 / (1 + exp( - (X1 == "B") + 2*(X1 == "C") + 2*(X1 == "B")*(X2 == "Male") - X3) ) 
+#' y2 <- rbinom(n, 1, prob2)
+#'  
+#' # Test goodness of fit of the logistic regression model
+#' (out <- GRPtest(X, y2, fam = "binomial", nsplits = 10))
+#'}
+#'
 #' @export
 #' @import stats
 #' @import randomForest
@@ -79,16 +107,29 @@ GRPtest <- function(X, y, fam = c("gaussian", "binomial", "poisson"),
                       RP_function = NULL,
                       nsplits = 5L, penalize = ifelse(p >= floor(n/1000), TRUE, FALSE), output_all = FALSE){
 
-  if (!is.matrix(X)){
-    stop("X should be a matrix with at least one column.")
+  if (!is.data.frame(X) && !is.matrix(X)){
+    stop("X should be a matrix or a data frame.")
   }
+  
+  if(is.data.frame(X)){
+    Z <- model.matrix(~., data = X)
+  }else{
+    Z <- X
+  }
+  
   np <- dim(X)
   if (is.null(np) | (np[2] < 1L)){
-    stop("X should be a matrix with at least one column.")
+    stop("X should be a matrix or a data frame with at least one column.")
   }
   n <- as.integer(np[1])
   p <- as.integer(np[2])
-  y <- as.numeric(y)
+  
+  if(fam == "binomial"){
+    if(is.factor(y)){
+      y <- as.numeric(y) - 1 # convert to numerical vector of 0s and 1s
+    }
+  }
+  
   if (length(y) != n){
     stop("y must have nrow(X) components.")
   }
@@ -104,7 +145,7 @@ GRPtest <- function(X, y, fam = c("gaussian", "binomial", "poisson"),
   if (is.null(RP_function)) {
     RP_function <- RP_randomForest
   }
-  output <- nonlin_test(X, y, fam, nsplits, RP_function, penalize)
+  output <- nonlin_test(Z, y, fam, nsplits, RP_function, penalize)
   pval_computed <- output$pval
   if (output_all == FALSE){
     return(pval_computed)

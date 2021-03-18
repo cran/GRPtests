@@ -36,9 +36,8 @@ single_split_pval <- function(X, y, fam, RP_function, penalize){
   partA <- glmfit(XA, yA, fam, penalize)
   partB <- glmfit(XB, yB, fam, penalize)
 
-  # Compute residuals resA, resB
+  # Compute residuals resA
   resA <- partA$res/partA$D
-  resB <- partB$res/partA$D  
 
   beta.hat <- partA$beta
   hatS <- which(beta.hat[-1] != 0)
@@ -48,6 +47,9 @@ single_split_pval <- function(X, y, fam, RP_function, penalize){
   pars <- GLM_parameters(mix, fam)
   D <- as.vector(sqrt(pars$var_y))
 
+  # Compute residuals resB
+  resB <- partB$res/D 
+  
   # Apply RP-function to residuals
 
   if (fam == "binomial" && sum(is.nan(resA) != 0)){
@@ -130,7 +132,7 @@ RP_randomForest <- function(XA, resA, XB){
   
   vars <- 1:ncol(XA)
   num.vars <- length(vars)
-  data.res <- data.frame(rbind(XA[, vars], XB[, vars]), c(resA, resA))
+  data.res <- data.frame(rbind(XA[, vars], XB[, vars]), c(resA, rep(0, nrow(XB))))
   rf <- ranger(y = data.res[1:nrow(XA),num.vars + 1], 
                x = data.res[1:nrow(XA),1:num.vars], data = data.res[1:nrow(XA),])
   pred.rf <- predict(rf, data = data.res[(nrow(XA)+1):(nrow(XA)+nrow(XB)),])$predictions

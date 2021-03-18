@@ -1,8 +1,8 @@
 Package: GRPtests
 Type: Package
 Title: Goodness-of-Fit Tests in High-Dimensional GLMs
-Version: 0.1.1
-Date: 2021-01-07
+Version: 0.1.2
+Date: 2021-03-17
 Author: Jana Jankova [aut, cre], Rajen Shah [aut], Peter Buehlmann [aut], Richard Samworth [aut]
 Maintainer: Jana Jankova <jana.jankova@gmail.com>
 Description: Methodology for testing nonlinearity in the conditional mean function
@@ -17,6 +17,6 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
 NeedsCompilation: no
-Packaged: 2021-01-07 21:03:31 UTC; janajankova
+Packaged: 2021-03-17 19:50:43 UTC; janajankova
 Repository: CRAN
-Date/Publication: 2021-01-07 22:10:16 UTC
+Date/Publication: 2021-03-18 02:50:02 UTC
